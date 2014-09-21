@@ -3,7 +3,7 @@
 // @description hide questions by score, user reputation and accepted answers
 // @namespace   so.app
 // @author      brasofilo
-// @version     0.2
+// @version     0.1
 // @copyright   2014, Rodolfo Buaiz (http://stackapps.com/users/10590/brasofilo)
 // @license     ISC; http://opensource.org/licenses/ISC
 // @match       http://stackoverflow.com/questions*
