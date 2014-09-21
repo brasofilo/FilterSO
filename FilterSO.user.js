@@ -13,8 +13,9 @@
 // @resource    IconSet3  http://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.10.4/css/images/ui-bg_glass_75_dadada_1x400.png
 // @resource    IconSet4  http://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.10.4/css/images/ui-bg_glass_65_ffffff_1x400.png
 // @homepageURL http://stackapps.com/questions/
-// @updateURL   https://raw.githubusercontent.com/brasofilo/FilterSO/master/FilterSO.user.js
-// @downloadURL https://raw.githubusercontent.com/brasofilo/FilterSO/master/FilterSO.user.js
+// @updateURL   https://gist.githubusercontent.com/brasofilo/21fa6d696d2d960e308c/raw/ebcfc6a543609fd83b459ec279840969844a361a/FilterSO.js
+// @downloadURL https://gist.githubusercontent.com/brasofilo/21fa6d696d2d960e308c/raw/ebcfc6a543609fd83b459ec279840969844a361a/FilterSO.js
+                https://gist.githubusercontent.com/brasofilo/21fa6d696d2d960e308c/raw/130b4dcfa5f5b103d363ddaa21763e961d85b66b/FilterSO.js
 // @grant    GM_addStyle
 // @grant    GM_getResourceURL
 // @grant    GM_getResourceText
@@ -97,7 +98,7 @@ var filter_so_startup = function() {
      */
     var $dialog = '<div id="my-mod-cont" class="topbar-dialog filter-dialog dno" style="top:34px;width:375px;height:235px;display:none;">\
     <div class="header">\
-        <h3>show/hide questions</h3>\
+        <h3>filter questions</h3>\
     </div>\
     <div class="modal-content">\
         <ul>\
