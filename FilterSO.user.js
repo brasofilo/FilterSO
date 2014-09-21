@@ -1,21 +1,23 @@
 // ==UserScript==
 // @name        Filter SO Questions
-// @description hide questions by score, user reputation and accepted answers
 // @namespace   so.app
+// @version     0.2
+// @description hide questions by score, user reputation and accepted answers
+// @homepage    https://github.com/brasofilo/FilterSO
 // @author      brasofilo
-// @version     0.1
 // @copyright   2014, Rodolfo Buaiz (http://stackapps.com/users/10590/brasofilo)
 // @license     ISC; http://opensource.org/licenses/ISC
-// @match       http://stackoverflow.com/questions*
+// @match       http*://*stackoverflow.com/questions*
+// @include     http*://*stackoverflow.com/questions*
 // @resource jqUI_CSS  http://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.10.4/css/jquery-ui.css
 // @resource    IconSet1  http://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.10.4/css/images/ui-bg_flat_75_ffffff_40x100.png
 // @resource    IconSet2  http://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.10.4/css/images/ui-bg_glass_75_e6e6e6_1x400.png
 // @resource    IconSet3  http://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.10.4/css/images/ui-bg_glass_75_dadada_1x400.png
 // @resource    IconSet4  http://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.10.4/css/images/ui-bg_glass_65_ffffff_1x400.png
 // @homepageURL http://stackapps.com/questions/
-// @updateURL   https://gist.githubusercontent.com/brasofilo/21fa6d696d2d960e308c/raw/ebcfc6a543609fd83b459ec279840969844a361a/FilterSO.js
-// @downloadURL https://gist.githubusercontent.com/brasofilo/21fa6d696d2d960e308c/raw/ebcfc6a543609fd83b459ec279840969844a361a/FilterSO.js
-                https://gist.githubusercontent.com/brasofilo/21fa6d696d2d960e308c/raw/130b4dcfa5f5b103d363ddaa21763e961d85b66b/FilterSO.js
+// @updateURL   https://github.com/brasofilo/FilterSO/raw/master/FilterSO.user.js
+// @downloadURL https://github.com/brasofilo/FilterSO/raw/master/FilterSO.user.js
+                https://github.com/brasofilo/FilterSO/raw/master/FilterSO.user.js
 // @grant    GM_addStyle
 // @grant    GM_getResourceURL
 // @grant    GM_getResourceText
@@ -35,7 +37,7 @@ jqUI_CssSrc     = jqUI_CssSrc.replace (/images\/ui-bg_glass_65_ffffff_1x400\.png
 
 GM_addStyle (jqUI_CssSrc);
 GM_addStyle(".topbar-dialog.filter-dialog .modal-content li>* { padding: 0; } #slider-rep a:focus, #slider-votes a:focus{ outline:0 }");
-            
+
 var jquery_url = '//cdnjs.cloudflare.com/ajax/libs/jqueryui/1.10.4/jquery-ui.min.js';
 
 var filter_so_startup = function() {
@@ -52,7 +54,7 @@ var filter_so_startup = function() {
         }
         else expires = "";
         document.cookie = name+"="+value+expires+"; path=/";
-    };   
+    };
     var read_cookie = function(name) {
         var nameEQ = name + "=";
         var ca = document.cookie.split(';');
@@ -72,23 +74,23 @@ var filter_so_startup = function() {
      */
     var $votesCookie = read_cookie('hide-negs3');
     $votesCookie = ( $votesCookie==null || $votesCookie==false || $votesCookie=='false' ) ? 0 : parseInt($votesCookie,10);
-    
+
     var $repCookie = read_cookie('hide-rep3');
     $repCookie = ( $repCookie==null || $repCookie==false || $repCookie=='false' ) ? 0 : parseInt($repCookie,10);
-    
+
     var $acceptedsCookie = read_cookie('hide-accept3');
     $acceptedsCookie = ( $acceptedsCookie==null || $acceptedsCookie==false || $acceptedsCookie=='false' ) ? false : true;
-    
+
     var $enableCookie = read_cookie('hide-enable3');
     $enableCookie = ( $enableCookie==null || $enableCookie==false || $enableCookie=='false' ) ? false : true;
-    
+
     /**
      * Sliders get and set
      */
     var get_slider_value = function( which ) {
         return $( "#slider-" + which ).slider( "option", "value" );
     };
-    
+
     var set_slider_value = function( which, what ) {
         $( "#slider-" + which ).slider( "option", "value", what );
     };
@@ -121,14 +123,14 @@ var filter_so_startup = function() {
         </ul>\
     </div>\
 </div>';
-    
+
     $($dialog).appendTo('div.js-topbar-dialog-corral');
     var $popover = $('#my-mod-cont');
 
     var $html = '<a href="javascript:void(0)" id="my-so-mod" class="topbar-icon yes-hover icon-inbox-mod" title="Filter questions"></a>';
     $($html).appendTo('div.network-items');
     var $icon = $('#my-so-mod');
-    
+
     /**
      * Icon statuses
      */
@@ -136,7 +138,7 @@ var filter_so_startup = function() {
         update_stati = function() {
       	  $statusSet = ( $enableCookie ) ? 'icon-inbox-mod-unread' : 'icon-inbox-mod-announcements';
   	  };
-    
+
     /**
      * Show/hide questions
      */
@@ -165,7 +167,7 @@ var filter_so_startup = function() {
             $('#slider-votes-count').text( $votesCookie );
             $('#slider-rep-count').text( $repCookie );
         };
-    
+
     /**
      * Votes and reputation sliders (dialog)
      */
@@ -188,31 +190,31 @@ var filter_so_startup = function() {
         max: 150
     });
     $('#slider-rep-count').text( get_slider_value('rep') );
-    
+
     /**
      * Save options
      */
     $('#sliders-save').click(function(){
         $icon.click();
         $icon.removeClass( $statusSet );
-        
+
         $enableCookie = $('#enable-filter').prop('checked');
         create_cookie( 'hide-enable3', $enableCookie, 9999 );
-        
+
         $acceptedsCookie = $('#hide-accepted').prop('checked');
         create_cookie( 'hide-accept3', $acceptedsCookie, 9999 );
-        
+
         $votesCookie = get_slider_value('votes');
         create_cookie( 'hide-negs3', $votesCookie, 9999 );
-        
+
         $repCookie = get_slider_value('rep');
         create_cookie( 'hide-rep3', $repCookie, 9999 );
-        
+
         update_stati();
         do_hide( $enableCookie );
     });
-    
-    
+
+
     /**
      * Diamond button
      */
@@ -221,14 +223,14 @@ var filter_so_startup = function() {
             if( !$popover.is(':visible') ) {
 	            $(this).addClass($statusSet);
             }
-        }, 
+        },
         function () {
             if( !$popover.is(':visible') ) {
 	            $(this).removeClass($statusSet);
             }
         }
     );
-    
+
     $icon.click(function(){
         var $pos = $(this).position();
         $popover.css('left', $pos.left );
@@ -241,35 +243,35 @@ var filter_so_startup = function() {
 	        $popover.show();
         }
     });
-    
+
     /**
      * Detect click outside the element
      * http://stackoverflow.com/a/3028037/1287812
      */
-    $(document).click(function(event) { 
+    $(document).click(function(event) {
         if(!$(event.target).closest('#my-so-mod, #my-mod-cont').length) {
             if($('#my-mod-cont').is(":visible")) {
                 $icon.click();
                 $icon.removeClass( $statusSet );
             }
-        }        
+        }
     });
-    
+
     /**
      * Set item states by cookies
      */
     if( $enableCookie )
         $('#enable-filter').prop('checked', true );
-        
+
     if( $acceptedsCookie )
         $('#hide-accepted').prop('checked', true );
-        
+
     if( $repCookie )
         set_slider_value('rep', $repCookie);
-        
+
     if( $votesCookie )
         set_slider_value('votes', $votesCookie);
-    
+
     /**
      * Start up
      */
@@ -280,14 +282,14 @@ var filter_so_startup = function() {
 /**
  * Load jQuery and do callback when jQuery has finished loading
  * Note, jQ replaces $ to avoid conflicts.
- * 
+ *
  * http://stackoverflow.com/a/3550261/1287812
  */
-var filter_so_add_jquery = function( callback ) 
+var filter_so_add_jquery = function( callback )
 {
     var script = document.createElement( 'script' );
     script.setAttribute( 'src', jquery_url );
-    script.addEventListener( 'load', function() 
+    script.addEventListener( 'load', function()
     {
         var script = document.createElement('script');
         script.textContent = '(' + callback.toString() + ')();';
@@ -300,13 +302,13 @@ var filter_so_add_jquery = function( callback )
  * Don't run on single question pages
  */
 var filter_so_check_page = function() {
-    var pathArray = window.location.pathname.split( '/' ); 
+    var pathArray = window.location.pathname.split( '/' );
     /*** Check IF /questions/11111 OR /questions/tagged/ ***/
-    if( pathArray[2] ) 
-        return isNaN( parseInt( pathArray[2], 10 ) ); 
-    
+    if( pathArray[2] )
+        return isNaN( parseInt( pathArray[2], 10 ) );
+
     /*** Check IF /questions ***/
-    else 
+    else
         return true;
 }
 /**
