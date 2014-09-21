@@ -13,8 +13,8 @@
 // @resource    IconSet3  http://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.10.4/css/images/ui-bg_glass_75_dadada_1x400.png
 // @resource    IconSet4  http://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.10.4/css/images/ui-bg_glass_65_ffffff_1x400.png
 // @homepageURL http://stackapps.com/questions/
-// @updateURL   
-// @downloadURL 
+// @updateURL   https://raw.githubusercontent.com/brasofilo/FilterSO/master/FilterSO.js
+// @downloadURL https://raw.githubusercontent.com/brasofilo/FilterSO/master/FilterSO.js
 // @grant    GM_addStyle
 // @grant    GM_getResourceURL
 // @grant    GM_getResourceText
