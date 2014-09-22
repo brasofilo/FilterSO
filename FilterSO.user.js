@@ -12,7 +12,8 @@
 // @match http*://*.stackexchange.com/questions*
 // @match http*://*.askubuntu.com/questions*
 // @match http*://*.mathoverflow.net/questions*
-// @match http*://*.stackapps.com/questions*// @resource jqUI_CSS  http://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.10.4/css/jquery-ui.css
+// @match http*://*.stackapps.com/questions*
+// @resource 	jqUI_CSS  http://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.10.4/css/jquery-ui.css
 // @resource    IconSet1  http://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.10.4/css/images/ui-bg_flat_75_ffffff_40x100.png
 // @resource    IconSet2  http://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.10.4/css/images/ui-bg_glass_75_e6e6e6_1x400.png
 // @resource    IconSet3  http://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.10.4/css/images/ui-bg_glass_75_dadada_1x400.png
@@ -311,7 +312,7 @@ var filter_so_check_page = function() {
     /*** Check IF /questions ***/
     else 
         return true;
-}
+};
 /**
  * Start up
  */
