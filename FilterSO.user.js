@@ -6,13 +6,20 @@
 // @version     0.3
 // @copyright   2014, Rodolfo Buaiz (http://stackapps.com/users/10590/brasofilo)
 // @license     ISC; http://opensource.org/licenses/ISC
-// @match http*://*.stackoverflow.com/questions*
-// @match http*://*.serverfault.com/questions*
-// @match http*://*.superuser.com/questions*
-// @match http*://*.stackexchange.com/questions*
 // @match http*://*.askubuntu.com/questions*
+// @match http*://*.askubuntu.com/unanswered*
 // @match http*://*.mathoverflow.net/questions*
+// @match http*://*.mathoverflow.net/unanswered*
+// @match http*://*.serverfault.com/questions*
+// @match http*://*.serverfault.com/unanswered*
 // @match http*://*.stackapps.com/questions*
+// @match http*://*.stackapps.com/unanswered*
+// @match http*://*.stackexchange.com/questions*
+// @match http*://*.stackexchange.com/unanswered*
+// @match http*://*.stackoverflow.com/questions*
+// @match http*://*.stackoverflow.com/unanswered*
+// @match http*://*.superuser.com/questions*
+// @match http*://*.superuser.com/unanswered*
 // @resource 	jqUI_CSS  http://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.10.4/css/jquery-ui.css
 // @resource    IconSet1  http://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.10.4/css/images/ui-bg_flat_75_ffffff_40x100.png
 // @resource    IconSet2  http://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.10.4/css/images/ui-bg_glass_75_e6e6e6_1x400.png
