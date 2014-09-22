@@ -3,25 +3,28 @@
 // @description hide questions by score, user reputation and accepted answers
 // @namespace   so.app
 // @author      brasofilo
-// @version     0.1
+// @version     0.2
 // @copyright   2014, Rodolfo Buaiz (http://stackapps.com/users/10590/brasofilo)
 // @license     ISC; http://opensource.org/licenses/ISC
-// @match       http://stackoverflow.com/questions*
-// @resource jqUI_CSS  http://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.10.4/css/jquery-ui.css
+// @match http*://*.stackoverflow.com/questions*
+// @match http*://*.serverfault.com/questions*
+// @match http*://*.superuser.com/questions*
+// @match http*://*.stackexchange.com/questions*
+// @match http*://*.askubuntu.com/questions*
+// @match http*://*.mathoverflow.net/questions*
+// @match http*://*.stackapps.com/questions*// @resource jqUI_CSS  http://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.10.4/css/jquery-ui.css
 // @resource    IconSet1  http://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.10.4/css/images/ui-bg_flat_75_ffffff_40x100.png
 // @resource    IconSet2  http://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.10.4/css/images/ui-bg_glass_75_e6e6e6_1x400.png
 // @resource    IconSet3  http://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.10.4/css/images/ui-bg_glass_75_dadada_1x400.png
 // @resource    IconSet4  http://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.10.4/css/images/ui-bg_glass_65_ffffff_1x400.png
 // @homepageURL http://stackapps.com/questions/
-// @updateURL   https://gist.githubusercontent.com/brasofilo/21fa6d696d2d960e308c/raw/ebcfc6a543609fd83b459ec279840969844a361a/FilterSO.js
-// @downloadURL https://gist.githubusercontent.com/brasofilo/21fa6d696d2d960e308c/raw/ebcfc6a543609fd83b459ec279840969844a361a/FilterSO.js
-                https://gist.githubusercontent.com/brasofilo/21fa6d696d2d960e308c/raw/130b4dcfa5f5b103d363ddaa21763e961d85b66b/FilterSO.js
-// @grant    GM_addStyle
-// @grant    GM_getResourceURL
-// @grant    GM_getResourceText
+// @updateURL   https://github.com/brasofilo/FilterSO/raw/master/FilterSO.user.js
+// @downloadURL https://github.com/brasofilo/FilterSO/raw/master/FilterSO.user.js
+// @grant    	GM_addStyle
+// @grant    	GM_getResourceURL
+// @grant    	GM_getResourceText
 // ==/UserScript==
 
-//var jqUI_CssSrc = GM_getResourceText ("jqUI_CSS");
 var iconSet1    = GM_getResourceURL ("IconSet1");
 var iconSet2    = GM_getResourceURL ("IconSet2");
 var iconSet3    = GM_getResourceURL ("IconSet3");
