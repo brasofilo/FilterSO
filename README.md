@@ -2,7 +2,7 @@
 
 ![script logo][logo] **Makes easier to find good questions to answer.**  
 
-The script will filter all Stack Overflow `/questions/*` pages,  
+The script will filter all Stack Exchange sites `/questions/*` pages,  
 hiding them by score, user reputation and accepted answers.  
 Uses jQuery to hide question items on the page and doesn't run if the URL is `/question/ID`.
 
@@ -27,9 +27,9 @@ For now, the script is only compatible with Chrome. You can use [TamperMonkey][T
 
 ---
 ##Code
-Unfortunately, I couldn't manage to make the sliders work on Firefox. I'm by no means an expert on userscripts, all contributions, forks and project takeover are welcome.
+Unfortunately, I couldn't manage to make the sliders work on Firefox. I'm by no means an expert on userscripts, all contributions and forks are welcome.
 
-  [logo]: http://i.stack.imgur.com/sSRak.png
+  [logo]: http://i.stack.imgur.com/L4CwZ.png
   [ss]: http://i.stack.imgur.com/Qn0SM.png
   [sosp]: http://cdn.sstatic.net/img/share-sprite-new.png?v=204b1e0e421b
   [DL]: https://raw.githubusercontent.com/brasofilo/FilterSO/master/FilterSO.user.js "Download / install FilterSO from Gist"
