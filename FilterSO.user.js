@@ -1,9 +1,9 @@
 // ==UserScript==
-// @name        Filter SO Questions
+// @name        Filter Stack Exchange Questions
 // @description hide questions by score, user reputation and accepted answers
 // @namespace   so.app
 // @author      brasofilo
-// @version     0.2
+// @version     0.3
 // @copyright   2014, Rodolfo Buaiz (http://stackapps.com/users/10590/brasofilo)
 // @license     ISC; http://opensource.org/licenses/ISC
 // @match http*://*.stackoverflow.com/questions*
@@ -74,16 +74,16 @@ var filter_so_startup = function() {
     /**
      * Read cookies
      */
-    var $votesCookie = read_cookie('hide-negs3');
+    var $votesCookie = read_cookie('hide-by-votes');
     $votesCookie = ( $votesCookie==null || $votesCookie==false || $votesCookie=='false' ) ? 0 : parseInt($votesCookie,10);
     
-    var $repCookie = read_cookie('hide-rep3');
+    var $repCookie = read_cookie('hide-by-rep');
     $repCookie = ( $repCookie==null || $repCookie==false || $repCookie=='false' ) ? 0 : parseInt($repCookie,10);
     
-    var $acceptedsCookie = read_cookie('hide-accept3');
-    $acceptedsCookie = ( $acceptedsCookie==null || $acceptedsCookie==false || $acceptedsCookie=='false' ) ? false : true;
+    var $acceptCookie = read_cookie('hide-by-accept');
+    $acceptCookie = ( $acceptCookie==null || $acceptCookie==false || $acceptCookie=='false' ) ? false : true;
     
-    var $enableCookie = read_cookie('hide-enable3');
+    var $enableCookie = read_cookie('hide-enabled');
     $enableCookie = ( $enableCookie==null || $enableCookie==false || $enableCookie=='false' ) ? false : true;
     
     /**
@@ -148,7 +148,7 @@ var filter_so_startup = function() {
         do_hide = function( how ) {
             $hiddenQuestions = 0;
             $('.question-summary').each(function() {
-                var $accept = $(this).find('.stats .status').hasClass('answered-accepted') && $acceptedsCookie;
+                var $accept = $(this).find('.stats .status').hasClass('answered-accepted') && $acceptCookie;
                 var $votes = $(this).find('.stats .vote .votes .vote-count-post').text();
                 var $rep = $(this).find('.user-info .user-details .reputation-score').text();
                 var $rep2 = $rep.replace(',','');
@@ -168,6 +168,11 @@ var filter_so_startup = function() {
             $('#slider-hide-count').text( $hiddenQuestions );
             $('#slider-votes-count').text( $votesCookie );
             $('#slider-rep-count').text( $repCookie );
+            var $isEnabled = ( how ) ? ' active' : ' inactive';
+            var $numHidden = ( $hiddenQuestions != 0 ) ? ' - ' + $hiddenQuestions + ' hidden' : '';
+            var $hasAccepted = $acceptCookie ? ' & no accepted' : '';
+            var $byType = ( how ) ? ' - minimum: ' + $votesCookie + ' votes & ' + $repCookie + ' rep' + $hasAccepted : '';
+            $('#my-so-mod').attr('title', 'Filter questions' + $isEnabled + $numHidden + $byType);
         };
     
     /**
@@ -201,16 +206,16 @@ var filter_so_startup = function() {
         $icon.removeClass( $statusSet );
         
         $enableCookie = $('#enable-filter').prop('checked');
-        create_cookie( 'hide-enable3', $enableCookie, 9999 );
+        create_cookie( 'hide-enabled', $enableCookie, 9999 );
         
-        $acceptedsCookie = $('#hide-accepted').prop('checked');
-        create_cookie( 'hide-accept3', $acceptedsCookie, 9999 );
+        $acceptCookie = $('#hide-accepted').prop('checked');
+        create_cookie( 'hide-by-accept', $acceptCookie, 9999 );
         
         $votesCookie = get_slider_value('votes');
-        create_cookie( 'hide-negs3', $votesCookie, 9999 );
+        create_cookie( 'hide-by-votes', $votesCookie, 9999 );
         
         $repCookie = get_slider_value('rep');
-        create_cookie( 'hide-rep3', $repCookie, 9999 );
+        create_cookie( 'hide-by-rep', $repCookie, 9999 );
         
         update_stati();
         do_hide( $enableCookie );
@@ -265,7 +270,7 @@ var filter_so_startup = function() {
     if( $enableCookie )
         $('#enable-filter').prop('checked', true );
         
-    if( $acceptedsCookie )
+    if( $acceptCookie )
         $('#hide-accepted').prop('checked', true );
         
     if( $repCookie )
