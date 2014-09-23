@@ -355,6 +355,7 @@ var filter_so_is_featured = function() {
     
     return;
 }
+
 /**
  * Don't run on single question pages or Featured tab
  */
@@ -372,6 +373,7 @@ var filter_so_check_page = function() {
     else 
         return true;
 };
+
 /**
  * Start up
  */
