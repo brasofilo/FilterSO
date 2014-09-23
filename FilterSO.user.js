@@ -1,31 +1,32 @@
 // ==UserScript==
 // @name        Filter Stack Exchange Questions
+// @namespace   stackapps.com/users/10590/brasofilo
+// @version     0.4
 // @description hide questions by score, user reputation and accepted answers
-// @namespace   so.app
+// @homepage    https://github.com/brasofilo/FilterSO
 // @author      brasofilo
-// @version     0.3
 // @copyright   2014, Rodolfo Buaiz (http://stackapps.com/users/10590/brasofilo)
 // @license     ISC; http://opensource.org/licenses/ISC
-// @match http*://*.askubuntu.com/questions*
-// @match http*://*.askubuntu.com/unanswered*
-// @match http*://*.mathoverflow.net/questions*
-// @match http*://*.mathoverflow.net/unanswered*
-// @match http*://*.serverfault.com/questions*
-// @match http*://*.serverfault.com/unanswered*
-// @match http*://*.stackapps.com/questions*
-// @match http*://*.stackapps.com/unanswered*
-// @match http*://*.stackexchange.com/questions*
-// @match http*://*.stackexchange.com/unanswered*
-// @match http*://*.stackoverflow.com/questions*
-// @match http*://*.stackoverflow.com/unanswered*
-// @match http*://*.superuser.com/questions*
-// @match http*://*.superuser.com/unanswered*
+// @match http://*.askubuntu.com/questions*
+// @match http://*.askubuntu.com/unanswered*
+// @match http://*.mathoverflow.net/questions*
+// @match http://*.mathoverflow.net/unanswered*
+// @match http://*.serverfault.com/questions*
+// @match http://*.serverfault.com/unanswered*
+// @match http://*.stackapps.com/questions*
+// @match http://*.stackapps.com/unanswered*
+// @match http://*.stackexchange.com/questions*
+// @match http://*.stackexchange.com/unanswered*
+// @match http://*.stackoverflow.com/questions*
+// @match http://*.stackoverflow.com/unanswered*
+// @match http://*.superuser.com/questions*
+// @match http://*.superuser.com/unanswered*
 // @resource 	jqUI_CSS  http://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.10.4/css/jquery-ui.css
 // @resource    IconSet1  http://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.10.4/css/images/ui-bg_flat_75_ffffff_40x100.png
 // @resource    IconSet2  http://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.10.4/css/images/ui-bg_glass_75_e6e6e6_1x400.png
 // @resource    IconSet3  http://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.10.4/css/images/ui-bg_glass_75_dadada_1x400.png
 // @resource    IconSet4  http://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.10.4/css/images/ui-bg_glass_65_ffffff_1x400.png
-// @homepageURL http://stackapps.com/questions/
+// @homepageURL http://stackapps.com/q/4888/10590
 // @updateURL   https://github.com/brasofilo/FilterSO/raw/master/FilterSO.user.js
 // @downloadURL https://github.com/brasofilo/FilterSO/raw/master/FilterSO.user.js
 // @grant    	GM_addStyle
@@ -45,9 +46,27 @@ jqUI_CssSrc     = jqUI_CssSrc.replace (/images\/ui-bg_glass_75_dadada_1x400\.png
 jqUI_CssSrc     = jqUI_CssSrc.replace (/images\/ui-bg_glass_65_ffffff_1x400\.png/g, iconSet4);
 
 GM_addStyle (jqUI_CssSrc);
-GM_addStyle(".topbar-dialog.filter-dialog .modal-content li>* { padding: 0; } #slider-rep a:focus, #slider-votes a:focus{ outline:0 }");
-            
-var jquery_url = '//cdnjs.cloudflare.com/ajax/libs/jqueryui/1.10.4/jquery-ui.min.js';
+GM_addStyle("\
+.topbar-dialog.filter-dialog .modal-content li>* {                                        \
+    padding: 0;                                                                           \
+}                                                                                         \
+#slider-rep a:focus, #slider-votes a:focus{                                               \
+    outline:0                                                                             \
+}                                                                                         \
+.se-app-gear1 {                                                                           \
+	background: url('http://i.stack.imgur.com/I5vIL.png') no-repeat -2px -2px !important; \
+	width: 24px !important;                                                               \
+	height: 14px !important;                                                              \
+	margin-top: 9px;                                                                      \
+}                                                                                         \
+.se-app-gear2 {                                                                           \
+	background: url('http://i.stack.imgur.com/I5vIL.png') no-repeat -2px -20px !important;\
+	width: 24px !important;                                                               \
+	height: 14px !important;                                                              \
+	margin-top: 9px;                                                                      \
+}");                                                                                      
+                                                                                          
+var jquery_url = '//cdnjs.cloudflare.com/ajax/libs/jqueryui/1.10.4/jquery-ui.min.js';     
 
 var filter_so_startup = function() {
     /**
@@ -94,6 +113,13 @@ var filter_so_startup = function() {
     $enableCookie = ( $enableCookie==null || $enableCookie==false || $enableCookie=='false' ) ? false : true;
     
     /**
+     * Different icons for moderators
+     */
+	var testForMod = function() {
+	    return $('div.topbar-links').find('.mod-only').length;
+	}
+    
+    /**
      * Sliders get and set
      */
     var get_slider_value = function( which ) {
@@ -136,7 +162,8 @@ var filter_so_startup = function() {
     $($dialog).appendTo('div.js-topbar-dialog-corral');
     var $popover = $('#my-mod-cont');
 
-    var $html = '<a href="javascript:void(0)" id="my-so-mod" class="topbar-icon yes-hover icon-inbox-mod" title="Filter questions"></a>';
+	$class = testForMod() ? ' se-app-gear1' : ' icon-inbox-mod';
+	var $html = '<a href="javascript:void(0)" id="my-so-mod" class="topbar-icon yes-hover' + $class + '" title="Filter questions"></a>';
     $($html).appendTo('div.network-items');
     var $icon = $('#my-so-mod');
     
@@ -190,8 +217,8 @@ var filter_so_startup = function() {
             $('#slider-votes-count').text( ui.value );
         },
         step: 1,
-        min: -4,
-        max: 4
+        min: -6,
+        max: 6
     });
     $('#slider-votes-count').text( get_slider_value('votes') );
 
@@ -201,7 +228,7 @@ var filter_so_startup = function() {
         },
         step: 5,
         min: 0,
-        max: 150
+        max: 250
     });
     $('#slider-rep-count').text( get_slider_value('rep') );
     
@@ -230,20 +257,22 @@ var filter_so_startup = function() {
     
     
     /**
-     * Diamond button
+     * Diamond button for mortals, Gear icon for mods
      */
-    $icon.hover(
-        function () {
-            if( !$popover.is(':visible') ) {
+	$icon.hover(
+	    function () {
+	        if( testForMod() )
+	            $(this).removeClass('se-app-gear1').addClass('se-app-gear2');
+	        else 
 	            $(this).addClass($statusSet);
-            }
-        }, 
-        function () {
-            if( !$popover.is(':visible') ) {
+	    }, 
+	    function () {
+	         if( testForMod() )
+	            $(this).removeClass('se-app-gear2').addClass('se-app-gear1');
+	        else 
 	            $(this).removeClass($statusSet);
-            }
-        }
-    );
+	    }
+	);
     
     $icon.click(function(){
         var $pos = $(this).position();
@@ -313,9 +342,27 @@ var filter_so_add_jquery = function( callback )
 };
 
 /**
- * Don't run on single question pages
+ * Detect Featured tab
+ * URL query var: http://stackoverflow.com/a/21152762/1287812
+ */
+var filter_so_is_featured = function() {
+    var queryDict = {}
+	location.search.substr(1).split("&").forEach(function(item) {
+        queryDict[item.split("=")[0]] = item.split("=")[1]
+    });
+	if(queryDict.sort && 'featured' == queryDict.sort)
+        return true;
+    
+    return;
+}
+/**
+ * Don't run on single question pages or Featured tab
  */
 var filter_so_check_page = function() {
+    /*** Block on Featured tab ***/
+    if( filter_so_is_featured() )
+        return false;
+
     var pathArray = window.location.pathname.split( '/' ); 
     /*** Check IF /questions/11111 OR /questions/tagged/ ***/
     if( pathArray[2] ) 
