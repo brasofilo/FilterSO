@@ -40,6 +40,7 @@ The ranges can be modified using the button <kbd>(?)</kbd>:
 ##Code
 Unfortunately, I couldn't manage to make the sliders work on Firefox. I'm by no means an expert on userscripts, all contributions and forks are welcome.
 
+<sup>- Version 1.0.1 - Bug fix, page detection must be earlier.</sup>
 <sup>- Version 1.0 - Added views. UI upgrade. Custom ranges settings. Localstorage is now used instead of cookies.</sup>  
 <sup>- Version 0.4 - Detect if user is mod and use different icon. Expanded range of selection (votes -6/6 and rep 0/250).</sup>  
 <sup>- Version 0.3 - Changed script name, it's not exclusive for SO anymore. Added /unanswered tab. More information about the filtering status on the button's tooltip.</sup>  
