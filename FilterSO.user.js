@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Filter Stack Exchange Questions
 // @namespace   stackapps.com/users/10590/brasofilo
-// @version     1.0
+// @version     1.0.1
 // @description hide questions by score, user reputation and accepted answers
 // @homepage    https://github.com/brasofilo/FilterSO
 // @author      brasofilo
@@ -527,4 +527,15 @@ var filter_so_add_jquery = function( callback )
 /**
  * Start up
  */
-filter_so_add_jquery( filter_so_startup );
+
+/* FAST PATCH TO BUG FIX 1.0 into 1.1 - pending review */
+var questions = ( window.location.pathname.indexOf('/questions') > -1 );
+if( questions ) {
+    var pathArray = window.location.pathname.split( '/' ); 
+    if( ( pathArray[2] && !isNaN( parseInt( pathArray[2], 10 ) ) ) ) {
+    } else {
+        filter_so_add_jquery( filter_so_startup );
+    }
+} else {
+    filter_so_add_jquery( filter_so_startup );
+}
