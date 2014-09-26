@@ -1,6 +1,7 @@
+##Filter Stack Exchange questions by votes, views and reputation
 ### (Chrome only)
 
-![script logo][logo] <sup><sub>v1.1</sub></sup> &nbsp;&nbsp;&nbsp;**Find good questions to answer.**  
+![script logo][logo] <sup><sub>v1.2</sub></sup> &nbsp;&nbsp;&nbsp;**Find good questions to answer.**  
 
 The script will filter all Stack Exchange sites questions pages,  
 hiding them by score, views, user reputation and accepted answers.  
@@ -40,6 +41,7 @@ The ranges can be modified using the button <kbd>(?)</kbd>:
 ##Code
 Unfortunately, I couldn't manage to make the sliders work on Firefox. I'm by no means an expert on userscripts, all contributions and forks are welcome.
 
+<sup>- Version 1.2 - Code revision. Better handling of the Unanswered page. New indicator counting hidden/total.</sup>
 <sup>- Version 1.1 - Now, questions are hidden/shown in response to the slider  values.</sup>
 <sup>- Version 1.0.1 - Bug fix, page detection must be earlier.</sup>
 <sup>- Version 1.0 - Added views. UI upgrade. Custom ranges settings. Localstorage is now used instead of cookies.</sup>  
@@ -51,8 +53,8 @@ Unfortunately, I couldn't manage to make the sliders work on Firefox. I'm by no 
 ---
 
   [logo]: http://i.stack.imgur.com/L4CwZ.png
-  [ss]: http://i.stack.imgur.com/Ax3Wg.png
-  [ss2]: http://i.stack.imgur.com/PyCK1.png
+  [ss]: http://i.stack.imgur.com/db9Ph.png
+  [ss2]: http://i.stack.imgur.com/yTI5t.png
   [ss3]: http://i.stack.imgur.com/Gg45w.png
   [sosp]: http://cdn.sstatic.net/img/share-sprite-new.png?v=204b1e0e421b
   [DL]: https://raw.githubusercontent.com/brasofilo/FilterSO/master/FilterSO.user.js "Download / install FilterSO from Gist"
