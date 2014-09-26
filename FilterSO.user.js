@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Filter Stack Exchange Questions
 // @namespace   stackapps.com/users/10590/brasofilo
-// @version     1.0.2
+// @version     1.1
 // @description hide questions by score, user reputation and accepted answers
 // @homepage    https://github.com/brasofilo/FilterSO
 // @author      brasofilo
@@ -44,7 +44,6 @@ GM_addStyle (jqUI_CssSrc);
 GM_addStyle("\
 #my-mod-cont { top:34px; width:375px; height:220px; display:none; overflow:hidden }\
 #my-mod-cont ul { position:absolute; top:0; left:0; width:100%; height:100%; }\
-#sliders-save { padding:5px;float:right; margin-right:3%; }\
 #settings-save { padding:5px;float:right; margin-top:-13px; }\
 .fse-save-btn { padding: .3em .6em; box-shadow: 0 2px 1px rgba(0,0,0,0.3),0 1px 0 rgba(255,255,255,0.4) inset; background-color: #3A3C68; color: #fff; border: 1px solid #000 !important; border-radius: 3px; text-decoration: none; }\
 #slider-rep a:focus, #slider-votes a:focus, #slider-views a:focus{ outline:0 }\
@@ -63,8 +62,8 @@ GM_addStyle("\
 .fse-slider { right: 13px;float: right;margin-top: -12px; width:67%}\
 .inbox-item.fse-checkbox label { line-height:20px; width: 100%; margin-left: 5px; }\
 .inbox-item.fse-checkbox input { float:left; }\
-h4.fse-totals { float: right; margin: 3px 15px 0 0; }\
-h4.fse-totals span { font-size:.7em }\
+h4.fse-totals { float: left; margin: 4px 28% 0; width: 70%; opacity: .4 }\
+h4.fse-totals span { font-size:1.3em }\
 .se-app-gear1 {\
 	background: url('http://i.stack.imgur.com/I5vIL.png') no-repeat -2px -2px !important;\
 	width: 24px !important;\
@@ -82,6 +81,8 @@ h4.fse-totals span { font-size:.7em }\
 #my-so-mod:hover::before{display:block}\
 #my-so-mod:hover{z-index:10;position:relative}\
 #my-so-mod:hover::after{width:200px;display:block;margin:25px 0 0 10px}\
+#fse-checkbox-left { float: left }\
+#fse-checkbox-right { margin-right: 20px }\
 ");                                
 
 var jquery_url = '//cdnjs.cloudflare.com/ajax/libs/jqueryui/1.10.4/jquery-ui.min.js';     
@@ -120,24 +121,43 @@ var filter_so_startup = function() {
             <ul id="fse-main-screen">';
 
     var $dialogFooter = '\
-                <li class="inbox-item fse-checkbox">\
-                    <label><input type="checkbox" id="hide-accepted"> Hide accepted</label>\
-                    <h4 class="fse-totals">Questions hidden: <span id="slider-hide-count"></span></h4>\
+                <li class="inbox-item fse-checkbox" style="height: 17px;">\
+					<div id="fse-checkbox-left" style="float:left"><label><input type="checkbox" id="hide-accepted"> Hide accepted</label></div>\
+                    <div id="fse-checkbox-right" style="float:right;margin-right: 15px;"><label><input type="checkbox" id="enable-filter" /> <strong>Enable filter</strong></label></div>\
                 </li>\
                 <li class="inbox-item unread-item fse-checkbox">\
-                    <label><input type="checkbox" id="enable-filter" /> Enable filter</label>\
-                    <button id="sliders-save" class="fse-save-btn">save</button>\
+                    <h4 class="fse-totals">Questions hidden: <span id="slider-hide-count"></span></h4>\
                 </li>\
             </ul>\
         </div>\
     </div>';
+    
        
     /**
      * Localstorage for saving options
      */
     var $userOptions;
     
-    var update_storage = function( page, values ) {
+    var update_storage = function( page ) {
+        var values;
+        if( page === 'filter' ) {
+            values = {
+                'enabled': $('#enable-filter').prop('checked'), 
+                'accept':  $('#hide-accepted').prop('checked'), 
+                'votes':   get_slider_value('votes'), 
+                'rep':     get_slider_value('rep'),
+                'views':   get_slider_value('views')
+            };
+        } else {
+            values = { 
+                'votes': {
+                   'min': parseInt( $('#range-votes-min').val(), 10 ),
+                   'max': parseInt( $('#range-votes-max').val(), 10 )
+                },
+                'rep':   parseInt( $('#range-rep-max').val(), 10 ),
+                'views': parseInt( $('#range-views-max').val(), 10 )
+            };
+        }
         var update = JSON.parse(localStorage.filterSE);
         if( update[window.location.hostname] )
             delete update[window.location.hostname];
@@ -170,6 +190,7 @@ var filter_so_startup = function() {
      * Box and filtering for /questions and /unanswered pages
      */
     var start_filtering = function( actual_page ) {
+        var second_run = false;
         /**
          * Dialog window
          */
@@ -189,13 +210,20 @@ var filter_so_startup = function() {
         $($dialogHeader + $dialog + $dialogFooter).appendTo('div.js-topbar-dialog-corral');
         if( 'questions' !== actual_page )
             $("#fse-rep-container *").disable();
+        
         $('#my-mod-cont .header h3').text('filter ' + actual_page);
+        
+        $('<small id="title-filter-counter"></small>').appendTo('#mainbar .subheader h1').css({'font-size': '.6em', 'margin-left': '10px'});
+
 
         /**
          * Update counts after show/hide 
          */
         var update_counts = function( how, howmany ) {
-            $('#slider-hide-count').text( howmany );
+            var total_questions = $('.question-summary').length;
+            $('#title-filter-counter').text( howmany + '/' + total_questions);
+            console.log($('#title-filter-counter').text());
+            $('#slider-hide-count').text( howmany );// + '/' + total_questions);
             $('#slider-votes-count').text( 'Votes: ' + $userOptions.filter.votes );
             $('#slider-rep-count').text( 'Reputation: ' + $userOptions.filter.rep );
             $('#slider-views-count').text( 'Views: ' + $userOptions.filter.views );
@@ -204,7 +232,7 @@ var filter_so_startup = function() {
                 $('#fse-mini-count').text('');
             }
             else {
-                var $numHidden = ( $('.question-summary').length - howmany) + ' questions';
+                var $numHidden = ( total_questions - howmany) + ' questions';
                 var $theVotes = ' with votes > ' + $userOptions.filter.votes;
                 var $theRep = ( 'questions' === actual_page ) ? ', rep > ' + $userOptions.filter.rep : '';
                 var $theViews = ', views > ' + $userOptions.filter.views;
@@ -290,49 +318,80 @@ var filter_so_startup = function() {
             update_counts( how, $hiddenQuestions );
         };
         
+        $('#hide-accepted').click(function(){
+            $userOptions.filter.accept = $(this).prop('checked' );
+            do_hide( $userOptions.filter.enabled );
+            update_storage( 'filter' );
+        });
+        $('#enable-filter').click(function(){
+            $userOptions.filter.enabled = $(this).prop('checked' );
+            do_hide( $userOptions.filter.enabled );
+            update_storage( 'filter' );
+        });
         /**
          * Votes and reputation sliders (dialog)
          */
         $('#slider-votes').slider({
-            slide: function( event, ui ) {
-                $('#slider-votes-count').text( 'Votes: ' + ui.value );
-            },
             step: 1,
             min: $userOptions.ranges.votes.min,
-            max: $userOptions.ranges.votes.max
-        });
-        $('#slider-votes-count').text( 'Votes: ' + get_slider_value('votes') );
-        $('#slider-rep').slider({
-            slide: function( event, ui ) {
-                $('#slider-rep-count').text( 'Reputation: ' + ui.value );
+            max: $userOptions.ranges.votes.max,
+            slide: function (event, ui) {
+                $('#slider-votes-count').text( 'Votes: ' + ui.value );
+                $userOptions.filter.votes = ui.value;
+                do_hide( $userOptions.filter.enabled );
             },
-            step: 5,
+            change: function (event, ui) {
+                if( second_run )
+	                update_storage( 'filter' );
+            }
+        });
+        var rep_step, views_step,
+            view_range = parseInt( $userOptions.ranges.views, 10 ),
+            rep_range = parseInt( $userOptions.ranges.rep, 10 );
+            if( view_range > 10000 ) views_step = 200;
+            	else if( view_range > 3000 ) views_step = 50;
+            		else views_step = 5;
+            if( rep_range > 2500 ) rep_step = 50;
+            	else if( rep_range > 1000 ) rep_step = 20;
+            		else rep_step = 5;
+        $('#slider-rep').slider({
+            step: rep_step,
             min: 0,
             max: $userOptions.ranges.rep,
-            disabled: ( 'questions' !== actual_page )
-        });
-        $('#slider-rep-count').text( 'Reputation: ' + get_slider_value('rep') );    
-        $('#slider-views').slider({
-            slide: function( event, ui ) {
-                $('#slider-views-count').text( 'Views: ' + ui.value );
+            disabled: ( 'questions' !== actual_page ),
+            slide: function (event, ui) {
+                $('#slider-rep-count').text( 'Reputation: ' + ui.value );
+                $userOptions.filter.rep = ui.value;
+                do_hide( $userOptions.filter.enabled );
             },
-            step: 5,
-            min: 0,
-            max: $userOptions.ranges.views
+            change: function (event, ui) {
+                if( second_run )
+	                update_storage( 'filter' );
+            }
         });
+        $('#slider-views').slider({
+            step: rep_step,
+            min: 0,
+            max: $userOptions.ranges.views,
+            slide: function (event, ui) {
+                $('#slider-views-count').text( 'Views: ' + ui.value );
+                $userOptions.filter.views = ui.value;
+                do_hide( $userOptions.filter.enabled );
+            },
+            change: function (event, ui) {
+                if( second_run )
+	                update_storage( 'filter' );
+            }
+        });
+        $('#slider-votes-count').text( 'Votes: ' + get_slider_value('votes') );
+        $('#slider-rep-count').text( 'Reputation: ' + get_slider_value('rep') );    
         $('#slider-views-count').text( 'Views: ' + get_slider_value('views') );
 
         /**
          * Save options
          */
-        $('#sliders-save').click(function(){
-            update_storage( 'filter', { 
-                'enabled': $('#enable-filter').prop('checked'), 
-                'accept': $('#hide-accepted').prop('checked'), 
-                'votes': get_slider_value('votes'), 
-                'rep': get_slider_value('rep'),
-                'views': get_slider_value('views')
-            });
+        $('#sliders-saveee').click(function(){
+            update_storage( 'filter' );
             update_icon_status();
             $('#slider-hide-count').parent().animate({ color: '#aaa' }, 300, function() {
                 $('#slider-hide-count').parent().animate({ color: '#000' }, 300);
@@ -354,7 +413,7 @@ var filter_so_startup = function() {
         $('#range-votes-max').val( $userOptions.ranges.votes.max );
         $('#range-rep-max').val( $userOptions.ranges.rep );
         $('#range-views-max').val( $userOptions.ranges.views );
-        
+        second_run = true;
         do_hide( $userOptions.filter.enabled );
     };
         
@@ -441,14 +500,7 @@ var filter_so_startup = function() {
         });
         
         $(document).on('click', '#settings-save', function(){
-            update_storage( 'ranges', { 
-                'votes': {
-                   'min': parseInt( $('#range-votes-min').val(), 10 ),
-                   'max': parseInt( $('#range-votes-max').val(), 10 )
-                },
-                'rep': parseInt( $('#range-rep-max').val(), 10 ),
-                'views': parseInt( $('#range-views-max').val(), 10 )
-            });
+            update_storage( 'ranges' );
             $icon.click();
             $icon.removeClass( $statusSet );
             if (window.confirm("Reload page?")) { 
