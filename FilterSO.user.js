@@ -93,7 +93,7 @@ var filter_so_startup = function() {
     
     var $dialogHeader = '<div id="my-mod-cont" class="topbar-dialog filter-dialog dno tooltip">\
         <div class="header">\
-            <h3>filter homepage</h3><a href="javascript:void(0);" style="float:right;" id="help-filter-se">(?)</a>\
+            <h3>filter homepage</h3><a href="javascript:void(0);" style="float:right;" id="help-filter-se">[?]</a>\
         </div>\
         <div class="fse-modal modal-content">\
             <ul id="fse-settings-screen">\
@@ -221,7 +221,7 @@ var filter_so_startup = function() {
          */
         var update_counts = function( how, howmany ) {
             var total_questions = $('.question-summary').length;
-            $('#title-filter-counter').text( howmany + '/' + total_questions);
+            $('#title-filter-counter').text( (total_questions-howmany) + '/' + total_questions);
             console.log($('#title-filter-counter').text());
             $('#slider-hide-count').text( howmany );// + '/' + total_questions);
             $('#slider-votes-count').text( 'Votes: ' + $userOptions.filter.votes );
