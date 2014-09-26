@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Filter Stack Exchange Questions
 // @namespace   stackapps.com/users/10590/brasofilo
-// @version     1.1
+// @version     1.2
 // @description hide questions by score, user reputation and accepted answers
 // @homepage    https://github.com/brasofilo/FilterSO
 // @author      brasofilo
@@ -76,6 +76,7 @@ h4.fse-totals span { font-size:1.3em }\
 	height: 14px !important;\
 	margin-top: 9px;\
 }\
+#fse-mini-count { display: inline-block; color: #747272;  border-radius: 2px; font-size: 11px; font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif !important; margin: 10px 0 0 35px; cursor: default; }\
 #my-so-mod:after{font:12px/1.4 Arial,Georgia,sans-serif;content:attr(tip);display:none;position:absolute;padding:5px 10px;top:0;margin:1em 0 3em;color:#fff;left:-20px;-moz-border-radius:4px;-webkit-border-radius:4px;border-radius:4px;background:-webkit-gradient(linear,left top,left bottom,from(#075698),to(#2e88c4));background:-moz-linear-gradient(top,#075698,#2e88c4);background:-o-linear-gradient(top,#075698,#2e88c4);background:linear-gradient(top,#075698,#2e88c4);-moz-box-shadow:0 0 4px #000;-webkit-box-shadow:0 0 4px #000;box-shadow:0 0 4px #000;}\
 #my-so-mod:before{z-index:13;position:absolute;content:'\00a0';display:none;width:0;height:0;border-style:solid;top:-3px;left:0;border-width:15px 7px;border-color:transparent transparent #075698}\
 #my-so-mod:hover::before{display:block}\
@@ -87,11 +88,12 @@ h4.fse-totals span { font-size:1.3em }\
 
 var jquery_url = '//cdnjs.cloudflare.com/ajax/libs/jqueryui/1.10.4/jquery-ui.min.js';     
 
-var filter_so_startup = function() {
-    /* menu icon */
-    var $icon;
-    
-    var $dialogHeader = '<div id="my-mod-cont" class="topbar-dialog filter-dialog dno tooltip">\
+var filter_so_startup = function( actual_page ) {
+    var second_run = false, // prevent slider to respond onChange when instantiated
+        $appIcon,           // our multicollider menu item
+        $hiddenQuestions,   // actual number of hidden q's
+        $userOptions,       // holds the current settings
+        $dialogHeader = '<div id="my-mod-cont" class="topbar-dialog filter-dialog dno tooltip">\
         <div class="header">\
             <h3>filter homepage</h3><a href="javascript:void(0);" style="float:right;" id="help-filter-se">[?]</a>\
         </div>\
@@ -118,9 +120,8 @@ var filter_so_startup = function() {
                     <button id="settings-save" class="fse-save-btn">save settings</button>\
                 </li>\
             </ul>\
-            <ul id="fse-main-screen">';
-
-    var $dialogFooter = '\
+            <ul id="fse-main-screen">',
+        $dialogFooter = '\
                 <li class="inbox-item fse-checkbox" style="height: 17px;">\
 					<div id="fse-checkbox-left" style="float:left"><label><input type="checkbox" id="hide-accepted"> Hide accepted</label></div>\
                     <div id="fse-checkbox-right" style="float:right;margin-right: 15px;"><label><input type="checkbox" id="enable-filter" /> <strong>Enable filter</strong></label></div>\
@@ -130,17 +131,48 @@ var filter_so_startup = function() {
                 </li>\
             </ul>\
         </div>\
-    </div>';
-    
+    </div>',
+        $dialog = '\
+            <li class="inbox-item slider">\
+                <div id="slider-votes-count" class="fse-title">Votes: NaN</div>\
+                <div id="slider-votes" class="fse-slider"></div>\
+            </li>\
+            <li class="inbox-item slider" id="fse-rep-container">\
+                <div id="slider-rep-count" class="fse-title">Reputation: NaN</div>\
+                <div id="slider-rep" class="fse-slider"></div>\
+            </li>\
+            <li class="inbox-item slider">\
+                <div id="slider-views-count" class="fse-title">Views: NaN</div>\
+                <div id="slider-views" class="fse-slider"></div>\
+            </li>';
        
+    /**
+     * Read options or set defaults 
+     */
+     var setup_local_storage = function()
+     {
+         var defaults = {
+            'filter': { 'enabled': false, 'accept': false, 'votes': 0, 'rep': 0, 'views': 0 },
+            'ranges': { 'votes': { 'min': -6, 'max': 6 }, 'rep': 250, 'views': 1500 }
+         };
+         if ( localStorage ) {
+             if (!localStorage.filterSE) {
+                 localStorage.filterSE = JSON.stringify(defaults);
+             }
+             $userOptions = JSON.parse(localStorage.filterSE);
+         } 
+         else {
+             $userOptions = defaults;
+             console.error('Local storage disabled. FilterSE cannot save its data.');
+         }
+     };
+
     /**
      * Localstorage for saving options
      */
-    var $userOptions;
-    
-    var update_storage = function( page ) {
+    var update_storage = function( section ) {
         var values;
-        if( page === 'filter' ) {
+        if( section === 'filter' ) {
             values = {
                 'enabled': $('#enable-filter').prop('checked'), 
                 'accept':  $('#hide-accepted').prop('checked'), 
@@ -159,9 +191,7 @@ var filter_so_startup = function() {
             };
         }
         var update = JSON.parse(localStorage.filterSE);
-        if( update[window.location.hostname] )
-            delete update[window.location.hostname];
-        update[page] = values;
+        update[section] = values;
         $userOptions = update;
         localStorage.filterSE = JSON.stringify(update);
     };
@@ -172,301 +202,214 @@ var filter_so_startup = function() {
     var get_slider_value = function( which ) {
         return $( "#slider-" + which ).slider( "option", "value" );
     };   
-    var set_slider_value = function( which, what ) {
-        $( "#slider-" + which ).slider( "option", "value", what );
+    var set_slider_value = function( which, howmuch ) {
+        $( "#slider-" + which ).slider( "option", "value", howmuch );
+        write_slider_text( which, howmuch );
     };
 
     /**
      * Icon statuses
      */
-    var $statusSet,
-        update_icon_status = function() {
-              $statusSet = ( $userOptions.filter.enabled ) ? 'icon-inbox-mod-unread' : 'icon-inbox-mod-announcements';
-          };
-
-    var $hiddenQuestions;
-    
-    /**
-     * Box and filtering for /questions and /unanswered pages
-     */
-    var start_filtering = function( actual_page ) {
-        var second_run = false;
-        /**
-         * Dialog window
-         */
-        var $dialog = '\
-                <li class="inbox-item slider">\
-                    <div id="slider-votes-count" class="fse-title">Votes: NaN</div>\
-                    <div id="slider-votes" class="fse-slider"></div>\
-                </li>\
-                <li class="inbox-item slider" id="fse-rep-container">\
-                    <div id="slider-rep-count" class="fse-title">Reputation: NaN</div>\
-                    <div id="slider-rep" class="fse-slider"></div>\
-                </li>\
-                <li class="inbox-item slider">\
-                    <div id="slider-views-count" class="fse-title">Views: NaN</div>\
-                    <div id="slider-views" class="fse-slider"></div>\
-                </li>';    
-        $($dialogHeader + $dialog + $dialogFooter).appendTo('div.js-topbar-dialog-corral');
-        if( 'questions' !== actual_page )
-            $("#fse-rep-container *").disable();
-        
-        $('#my-mod-cont .header h3').text('filter ' + actual_page);
-        
-        $('<small id="title-filter-counter"></small>').appendTo('#mainbar .subheader h1').css({'font-size': '.6em', 'margin-left': '10px'});
-
-
-        /**
-         * Update counts after show/hide 
-         */
-        var update_counts = function( how, howmany ) {
-            var total_questions = $('.question-summary').length;
-            $('#title-filter-counter').text( (total_questions-howmany) + '/' + total_questions);
-            console.log($('#title-filter-counter').text());
-            $('#slider-hide-count').text( howmany );// + '/' + total_questions);
-            $('#slider-votes-count').text( 'Votes: ' + $userOptions.filter.votes );
-            $('#slider-rep-count').text( 'Reputation: ' + $userOptions.filter.rep );
-            $('#slider-views-count').text( 'Views: ' + $userOptions.filter.views );
-            if( !how ) {
-                $('#my-so-mod').attr('title', 'Filter inactive' );
-                $('#fse-mini-count').text('');
-            }
-            else {
-                var $numHidden = ( total_questions - howmany) + ' questions';
-                var $theVotes = ' with votes > ' + $userOptions.filter.votes;
-                var $theRep = ( 'questions' === actual_page ) ? ', rep > ' + $userOptions.filter.rep : '';
-                var $theViews = ', views > ' + $userOptions.filter.views;
-                var $hasAccepted = $userOptions.filter.accept ? ', no accepted' : '';
-                $('#my-so-mod').attr('title', $numHidden + $theVotes + $theRep + $theViews + $hasAccepted);
-                $('#fse-mini-count').text(howmany);
-            }
-        };
-        
-        /**
-         * Get views from title
-         */
-        var parse_title_views = function( title ){
-            return title.replace(' views','').replace(' visitas','').replace( /,/g, '' );
-        };
-        
-        var parse_text_rep = function( text ){
-            var parsed = 0;
-            if( text.indexOf('k') > -1 ) {
-                var splited = text.replace('k','').split('.');
-                if( splited.length === 1 )
-                    parsed = parseInt( splited[0], 10 ) * 1000;
-                else
-                    parsed = parseInt( splited[0], 10 ) * 1000 + parseInt( splited[1], 10 ) * 100;
-            }
-            else {
-                parsed = parseInt( text.replace(',','').replace(' ',''), 10 );
-            }
-            return parsed;
-        };
-        
-        /**
-         * Show/hide questions
-         */
-        var do_hide = function( how ) {
-            $hiddenQuestions = 0;
-            if( !how ) {
-                $('.question-summary').each(function() {
-                    $(this).slideDown(200);
-                });
-                update_counts( how, $hiddenQuestions );
-                return;
-            }
-            
-            // HOMEPAGE & UNANSWERED
-            if( 'questions' !== actual_page ) {
-                $('.question-summary').each(function() {
-                    var $doAccept = $(this).find('.status.answered-accepted').length && $userOptions.filter.accept;
-                    var $votes = $(this).find('.votes .mini-counts').text();
-                    var $doVotes = ( parseInt( $votes, 10 ) < $userOptions.filter.votes );
-                    var $views = ( 'homepage' === actual_page ) 
-                    	? parse_title_views( $(this).find('.views .mini-counts span').attr('title') )
-                    	: parse_title_views( $(this).find('.statscontainer .views').attr('title') );
-                    var $doViews = ( parseInt( $views, 10 ) < $userOptions.filter.views );
-                    if( $doVotes || $doViews || $doAccept ) {
-                        $(this).slideUp(100);
-                        $hiddenQuestions++;
-                    }
-                    else {
-                        $(this).slideDown(200);
-                    }
-                });
-            }
-            // QUESTIONS
-            else {
-                $('.question-summary').each(function() {
-                    var $doAccept = $(this).find('.stats .status').hasClass('answered-accepted') && $userOptions.filter.accept;
-                    var $votes = $(this).find('.stats .vote .votes .vote-count-post').text();
-                    var $doVotes = ( parseInt( $votes, 10 ) < $userOptions.filter.votes );
-                    var $views = parse_title_views( $(this).find('.statscontainer .views').attr('title') );
-                    var $doViews = ( parseInt( $views, 10 ) < $userOptions.filter.views );
-                    var $rep = parse_text_rep( $(this).find('.user-info .user-details .reputation-score').text() );
-                    var $doRep = ( parseInt( $rep, 10 ) < $userOptions.filter.rep );
-                    if( $doVotes || $doRep || $doViews || $doAccept ) {
-                        $(this).slideUp(100);
-                        $hiddenQuestions++;
-                    }
-                    else {
-                        $(this).slideDown(200);
-                    }
-                });
-            }
-            update_counts( how, $hiddenQuestions );
-        };
-        
-        $('#hide-accepted').click(function(){
-            $userOptions.filter.accept = $(this).prop('checked' );
-            do_hide( $userOptions.filter.enabled );
-            update_storage( 'filter' );
-        });
-        $('#enable-filter').click(function(){
-            $userOptions.filter.enabled = $(this).prop('checked' );
-            do_hide( $userOptions.filter.enabled );
-            update_storage( 'filter' );
-        });
-        /**
-         * Votes and reputation sliders (dialog)
-         */
-        $('#slider-votes').slider({
-            step: 1,
-            min: $userOptions.ranges.votes.min,
-            max: $userOptions.ranges.votes.max,
-            slide: function (event, ui) {
-                $('#slider-votes-count').text( 'Votes: ' + ui.value );
-                $userOptions.filter.votes = ui.value;
-                do_hide( $userOptions.filter.enabled );
-            },
-            change: function (event, ui) {
-                if( second_run )
-	                update_storage( 'filter' );
-            }
-        });
-        var rep_step, views_step,
-            view_range = parseInt( $userOptions.ranges.views, 10 ),
-            rep_range = parseInt( $userOptions.ranges.rep, 10 );
-            if( view_range > 10000 ) views_step = 200;
-            	else if( view_range > 3000 ) views_step = 50;
-            		else views_step = 5;
-            if( rep_range > 2500 ) rep_step = 50;
-            	else if( rep_range > 1000 ) rep_step = 20;
-            		else rep_step = 5;
-        $('#slider-rep').slider({
-            step: rep_step,
-            min: 0,
-            max: $userOptions.ranges.rep,
-            disabled: ( 'questions' !== actual_page ),
-            slide: function (event, ui) {
-                $('#slider-rep-count').text( 'Reputation: ' + ui.value );
-                $userOptions.filter.rep = ui.value;
-                do_hide( $userOptions.filter.enabled );
-            },
-            change: function (event, ui) {
-                if( second_run )
-	                update_storage( 'filter' );
-            }
-        });
-        $('#slider-views').slider({
-            step: rep_step,
-            min: 0,
-            max: $userOptions.ranges.views,
-            slide: function (event, ui) {
-                $('#slider-views-count').text( 'Views: ' + ui.value );
-                $userOptions.filter.views = ui.value;
-                do_hide( $userOptions.filter.enabled );
-            },
-            change: function (event, ui) {
-                if( second_run )
-	                update_storage( 'filter' );
-            }
-        });
-        $('#slider-votes-count').text( 'Votes: ' + get_slider_value('votes') );
-        $('#slider-rep-count').text( 'Reputation: ' + get_slider_value('rep') );    
-        $('#slider-views-count').text( 'Views: ' + get_slider_value('views') );
-
-        /**
-         * Save options
-         */
-        $('#sliders-saveee').click(function(){
-            update_storage( 'filter' );
-            update_icon_status();
-            $('#slider-hide-count').parent().animate({ color: '#aaa' }, 300, function() {
-                $('#slider-hide-count').parent().animate({ color: '#000' }, 300);
-            });
-            do_hide( $userOptions.filter.enabled );
-        });
-    
-        /**
-         * Set item states by cookies
-         */
-        if( $userOptions.filter.enabled )
-            $('#enable-filter').prop('checked', true );
-        if( $userOptions.filter.accept )
-            $('#hide-accepted').prop('checked', true );
-        set_slider_value('rep', parseInt( $userOptions.filter.rep, 10 ) );
-        set_slider_value('votes', parseInt( $userOptions.filter.votes, 10 ) );
-        set_slider_value('views', parseInt( $userOptions.filter.views, 10 ) );
-        $('#range-votes-min').val( $userOptions.ranges.votes.min );
-        $('#range-votes-max').val( $userOptions.ranges.votes.max );
-        $('#range-rep-max').val( $userOptions.ranges.rep );
-        $('#range-views-max').val( $userOptions.ranges.views );
-        second_run = true;
-        do_hide( $userOptions.filter.enabled );
+    var update_icon_status = function() {
+        return ( $userOptions.filter.enabled ) ? 'icon-inbox-mod-unread' : 'icon-inbox-mod-announcements';
     };
-        
+    
     /**
-     * Add icon to multicollider menu
+     * Different icons for moderators
      */
-    var start_menu = function( actual_page ) {
-        /**
-         * Different icons for moderators
-         */
-        var testForMod = function() {
-            return $('div.topbar-links').find('.mod-only').length;
-        };
+    var testForMod = function() {
+        return $('div.topbar-links').find('.mod-only').length;
+    };
 
-        var $class = testForMod() ? ' se-app-gear1' : ' icon-inbox-mod';
-        var $html_icon = '<a href="javascript:void(0)" id="my-so-mod" class="topbar-icon yes-hover' + $class + '" title="Filter questions"></a>';
-        $($html_icon).appendTo('div.network-items');
-        $icon = $('#my-so-mod');
-		var $html_count = '<em id="fse-mini-count" style="margin-top: 4px; float: right; color: #575757; margin-left: -5px; font-size: .8em;"></em>';
-        $($html_count).appendTo('div.network-items');
+    var write_slider_text = function( which, howmuch ) {
+        var texts = { 'votes': 'Votes: ', 'rep': 'Reputation: ', 'views': 'Views: ' };
+        $('#slider-' + which + '-count').text( texts[which] + howmuch );
+    };
+    
+    /**
+     * Update counts after show/hide 
+     */
+    var update_counts = function() {
+        var how = $userOptions.filter.enabled;
+        var total_questions = $('.question-summary').length;
+        $('#fse-mini-count').text( ( how ? ( total_questions - $hiddenQuestions ) + '/' + total_questions : '' ) );
+        //console.log($('#fse-mini-count').text());
+        $('#slider-hide-count').text( $hiddenQuestions );// + '/' + total_questions);
+        write_slider_text( 'votes', $userOptions.filter.votes );
+        write_slider_text( 'rep', $userOptions.filter.rep );
+        write_slider_text( 'views', $userOptions.filter.views );
+        //$('#slider-votes-count').text( 'Votes: ' + $userOptions.filter.votes );
+        //$('#slider-rep-count').text( 'Reputation: ' + $userOptions.filter.rep );
+        //$('#slider-views-count').text( 'Views: ' + $userOptions.filter.views );
+        if( !how ) {
+            $('#my-so-mod').attr('title', 'Filter inactive' );
+        }
+        else {
+            var $numHidden = ( total_questions - $hiddenQuestions) + ' questions';
+            var $theVotes = ' with votes > ' + $userOptions.filter.votes;
+            var $theRep = ( 'questions' === actual_page ) ? ', rep > ' + $userOptions.filter.rep : '';
+            var $theViews = ', views > ' + $userOptions.filter.views;
+            var $hasAccepted = $userOptions.filter.accept ? ', no accepted' : '';
+            $('#my-so-mod').attr('title', $numHidden + $theVotes + $theRep + $theViews + $hasAccepted);
+        }
+    };
+    
+    /**
+    * Get views from title
+    */
+    var parse_title_views = function( title ){
+        return title.replace(' views','').replace(' visitas','').replace( /,/g, '' );
+    };
+    
+    /**
+    * Get rep from text
+    */
+    var parse_text_rep = function( text ){
+        var parsed = 0;
+        if( text.indexOf('k') > -1 ) {
+            var splited = text.replace('k','').split('.');
+            if( splited.length === 1 )
+                parsed = parseInt( splited[0], 10 ) * 1000;
+            else
+                parsed = parseInt( splited[0], 10 ) * 1000 + parseInt( splited[1], 10 ) * 100;
+        }
+        else {
+            parsed = parseInt( text.replace(',','').replace(' ',''), 10 );
+        }
+        return parsed;
+    };
+    
+    /**
+    * Custom slider steps depending on app settings
+    */
+    var calculate_slider_step = function( which ) {
+        var step;
+        if( 'views' === which ) {
+            var view_range = parseInt( $userOptions.ranges.views, 10 );
+            if( view_range > 10000 ) step = 200;
+            else if( view_range > 3000 ) step = 50;
+            else step = 5;
+        }
+        else {
+            var rep_range = parseInt( $userOptions.ranges.rep, 10 );
+            if( rep_range > 2500 ) step = 50;
+            else if( rep_range > 1000 ) step = 20;
+            else step = 5;
+        }
+        return step;
+    };
+    
+    /**
+     * Show/hide questions
+     */
+    var do_hide = function() {
+        var how = $userOptions.filter.enabled;
+        $hiddenQuestions = 0;
+        
+        // Show
+        if( !how ) {
+            $('.question-summary').each(function() {
+                $(this).slideDown(200);
+            });
+        }
+        // Hide
+        else {
+            switch( actual_page ) {
+                case 'homepage':
+                    $('.question-summary').each(function() {
+                        var $doAccept = $(this).find('.status.answered-accepted').length && $userOptions.filter.accept;
+                        var $votes = $(this).find('.votes .mini-counts').text();
+                        var $doVotes = ( parseInt( $votes, 10 ) < $userOptions.filter.votes );
+                        var $views = ( 'homepage' === actual_page ) 
+                        ? parse_title_views( $(this).find('.views .mini-counts span').attr('title') )
+                        : parse_title_views( $(this).find('.statscontainer .views').attr('title') );
+                        var $doViews = ( parseInt( $views, 10 ) < $userOptions.filter.views );
+                        if( $doVotes || $doViews || $doAccept ) {
+                            $(this).slideUp(100);
+                            $hiddenQuestions++;
+                        }
+                        else {
+                            $(this).slideDown(200);
+                        }
+                    });
+                    break;
+                case 'unanswered':
+                    $('.question-summary').each(function() {
+                        var $votes = $(this).find('.stats .vote .votes .vote-count-post').text();
+                        var $doVotes = ( parseInt( $votes, 10 ) < $userOptions.filter.votes );
+                        var $views = ( 'homepage' === actual_page ) 
+                        ? parse_title_views( $(this).find('.views .mini-counts span').attr('title') )
+                        : parse_title_views( $(this).find('.statscontainer .views').attr('title') );
+                        var $doViews = ( parseInt( $views, 10 ) < $userOptions.filter.views );
+                        if( $doVotes || $doViews  ) {
+                            $(this).slideUp(100);
+                            $hiddenQuestions++;
+                        }
+                        else {
+                            $(this).slideDown(200);
+                        }
+                    });
+                    break;
+                case 'questions':
+                    $('.question-summary').each(function() {
+                        var $doAccept = $(this).find('.stats .status').hasClass('answered-accepted') && $userOptions.filter.accept;
+                        var $votes = $(this).find('.stats .vote .votes .vote-count-post').text();
+                        var $doVotes = ( parseInt( $votes, 10 ) < $userOptions.filter.votes );
+                        var $views = parse_title_views( $(this).find('.statscontainer .views').attr('title') );
+                        var $doViews = ( parseInt( $views, 10 ) < $userOptions.filter.views );
+                        var $rep = parse_text_rep( $(this).find('.user-info .user-details .reputation-score').text() );
+                        var $doRep = ( parseInt( $rep, 10 ) < $userOptions.filter.rep );
+                        if( $doVotes || $doRep || $doViews || $doAccept ) {
+                            $(this).slideUp(100);
+                            $hiddenQuestions++;
+                        }
+                        else {
+                            $(this).slideDown(200);
+                        }
+                    });
+                    break;
+            }
+        }
+        update_counts();
+    };
 
+    /**
+     * Add icon to multicollider menu and app ui box
+     */
+    var create_elements = function() {
+        
+        var html_icon = '<a href="javascript:void(0)" id="my-so-mod" class="topbar-icon yes-hover' 
+                        + ( testForMod() ? ' se-app-gear1' : ' icon-inbox-mod' )
+                        + '" title="Filter questions"><span id="fse-mini-count">2/50</span></a>';
+        $( html_icon ).appendTo('div.network-items');
+        var $appIcon = $('#my-so-mod');
+        
         /**
          * Diamond button for mortals, Gear icon for mods
          */
-        $icon.hover(
+        $appIcon.hover(
             function () {
-                if( !$('#my-mod-cont').is(':visible') )
-	                $('#fse-mini-count').fadeOut(75);
                 if( testForMod() )
                     $(this).removeClass('se-app-gear1').addClass('se-app-gear2');
                 else 
-                    $(this).addClass($statusSet);
+                    $(this).addClass( update_icon_status() );
             }, 
             function () {
-                if( !$('#my-mod-cont').is(':visible') )
-	                $('#fse-mini-count').fadeIn(75);
                  if( testForMod() )
                     $(this).removeClass('se-app-gear2').addClass('se-app-gear1');
                 else 
-                    $(this).removeClass($statusSet);
+                    $(this).removeClass( update_icon_status() );
             }
         );
-        $icon.click(function(){
+        $appIcon.click(function(){
             $('#my-mod-cont').css('left', $(this).position().left );
             if( $('#my-mod-cont').is(':visible') ) {
                 $(this).removeClass('topbar-icon-on');
                 $('#my-mod-cont').hide();
-                $('#fse-mini-count').fadeIn(75);
             }
             else {
                 $(this).addClass('topbar-icon-on');
                 $('#my-mod-cont').show();
-                $('#fse-mini-count').fadeOut(75);
             }
         });
 
@@ -477,14 +420,14 @@ var filter_so_startup = function() {
         $(document).click(function(event) { 
             if(!$(event.target).closest('#my-so-mod, #my-mod-cont').length) {
                 if($('#my-mod-cont').is(":visible")) {
-                    $icon.click();
-                    $icon.removeClass( $statusSet );
+                    $appIcon.click();
+                    $appIcon.removeClass(  update_icon_status()  );
                 }
             }        
         });
         
         /**
-         * New plugin settings area
+         * Settings area button
          */
         $(document).on('click', '#help-filter-se', function(){
             if( $('#fse-settings-screen').is(':visible') ) {
@@ -499,92 +442,176 @@ var filter_so_startup = function() {
             }
         });
         
+        /**
+         * Settings area save options
+         */
         $(document).on('click', '#settings-save', function(){
             update_storage( 'ranges' );
-            $icon.click();
-            $icon.removeClass( $statusSet );
+            $appIcon.click();
+            $appIcon.removeClass(  update_icon_status()  );
             if (window.confirm("Reload page?")) { 
                 document.location.reload(true);
             }
         });
-    };
-    
-    /**
-     * Detect if we are in the homepage, /questions/not-id and /unanswered pages
-     */
-    var filter_so_check_page = function() {
-        var path = window.location.pathname;
-        var unanswered = ( path.indexOf('/unanswered') > -1 ); 
-        var questions = ( path.indexOf('/questions') > -1 );
-        if( questions ) {
-            var pathArray = window.location.pathname.split( '/' ); 
-            if( ( pathArray[2] && !isNaN( parseInt( pathArray[2], 10 ) ) ) || ( path.indexOf('/ask') > -1 ) )
-                questions = false;
-        }
-        if( path == '/' )
-            return 'homepage';
-        else if( questions )
-            return 'questions';
-        else if( unanswered )
-            return 'unanswered';
-        else
-            return false;
+        
+        /**
+         * Dialog window
+         */
+        $( $dialogHeader + $dialog + $dialogFooter ).appendTo('div.js-topbar-dialog-corral');
+        
+        /**
+         * Checkboxe accepted
+         */
+        $('#hide-accepted').click(function(){
+            $userOptions.filter.accept = $(this).prop('checked' );
+            do_hide();
+            update_storage( 'filter' );
+        });
+
+        /**
+         * Checkboxe enabled
+         */
+        $('#enable-filter').click(function(){
+            $userOptions.filter.enabled = $(this).prop('checked' );
+            do_hide();
+            update_storage( 'filter' );
+        });
+        
+        /**
+         * Votes slider
+         */
+        $('#slider-votes').slider({
+            step: 1,
+            min: $userOptions.ranges.votes.min,
+            max: $userOptions.ranges.votes.max,
+            slide: function (event, ui) {
+                write_slider_text( 'votes', ui.value );
+                $userOptions.filter.votes = ui.value;
+                do_hide();
+            },
+            change: function (event, ui) {
+                if( second_run )
+	                update_storage( 'filter' );
+            }
+        });
+
+        /**
+         * Reputation slider
+         */
+        var rep_step, 
+            views_step,
+            view_range = calculate_slider_step('views'), // custom steps depending on saved options
+            rep_range = calculate_slider_step('rep');
+        $('#slider-rep').slider({
+            step: rep_step,
+            min: 0,
+            max: $userOptions.ranges.rep,
+            disabled: ( 'questions' !== actual_page ),
+            slide: function (event, ui) {
+                write_slider_text( 'rep', ui.value );
+                $userOptions.filter.rep = ui.value;
+                do_hide();
+            },
+            change: function (event, ui) {
+                if( second_run )
+	                update_storage( 'filter' );
+            }
+        });
+
+        /**
+         * Views slider
+         */
+        $('#slider-views').slider({
+            step: rep_step,
+            min: 0,
+            max: $userOptions.ranges.views,
+            slide: function (event, ui) {
+                write_slider_text( 'views', ui.value );
+                $userOptions.filter.views = ui.value;
+                do_hide();
+            },
+            change: function (event, ui) {
+                if( second_run )
+	                update_storage( 'filter' );
+            }
+        });
+
+        /**
+         * Set item states
+         */
+        if( $userOptions.filter.enabled )
+            $('#enable-filter').prop('checked', true );
+        if( $userOptions.filter.accept )
+            $('#hide-accepted').prop('checked', true );
+
+        set_slider_value( 'votes', parseInt( $userOptions.filter.votes, 10 ) );
+        set_slider_value( 'rep', parseInt( $userOptions.filter.rep, 10 ) );
+        set_slider_value( 'views', parseInt( $userOptions.filter.views, 10 ) );
+
+        $('#range-votes-min').val( $userOptions.ranges.votes.min );
+        $('#range-votes-max').val( $userOptions.ranges.votes.max );
+        $('#range-rep-max').val( $userOptions.ranges.rep );
+        $('#range-views-max').val( $userOptions.ranges.views );
+
+        $('#my-mod-cont .header h3').text('filter ' + actual_page);
+
+        if( 'questions' !== actual_page )
+            $("#fse-rep-container *").disable();
+        
+        if( 'unanswered' === actual_page )
+            $("#fse-checkbox-left *").disable();
+               
+        second_run = true;
+        do_hide();
     };
 
-    /**
-     * Read options or set defaults 
-     */
-    if ( localStorage ) {
-        if (!localStorage.filterSE) {
-            localStorage.filterSE = JSON.stringify({
-                'filter': { 'enabled': false, 'accept': false, 'votes': 0, 'rep': 0, 'views': 0 },
-                'ranges': { 'votes': { 'min': -6, 'max': 6 }, 'rep': 250, 'views': 1500 }
-             });
-        }
-        $userOptions = JSON.parse(localStorage.filterSE);
-    } 
-    else {
-        console.error('Local storage disabled. FilterSE cannot save its data.');
-    }
-        
-    /**
-     * Start up
-     */
-    if( ( page = filter_so_check_page() ) !== false ) {
-        start_menu(page);
-        update_icon_status();
-        start_filtering(page);
-    }
+    /* Start up */
+     setup_local_storage();
+     create_elements();
 };
 
 /**
- * Load jQuery and do callback when jQuery has finished loading
- * Note, jQ replaces $ to avoid conflicts.
- * 
+ * Load jQueryUI and do callback when finished loading
  * http://stackoverflow.com/a/3550261/1287812
  */
-var filter_so_add_jquery = function( callback ) 
+var filter_so_add_jquery = function( callback, page ) 
 {
     var script = document.createElement( 'script' );
     script.setAttribute( 'src', jquery_url );
     script.addEventListener( 'load', function() 
     {
         var script = document.createElement('script');
-        script.textContent = '(' + callback.toString() + ')();';
+        script.textContent = '(' + callback.toString() + ')("' + page + '");';
         document.body.appendChild( script );
     }, false );
     document.body.appendChild( script );
 };
 
 /**
- * Start up
- * don't run on /questions/POST-ID or /questions/ask
+ * Detect if we are in the homepage, /questions/not-id and /unanswered pages
  */
-if( window.location.pathname.indexOf('/questions') > -1 ) { 
-    var pathArray = window.location.pathname.split( '/' ); 
-    if( isNaN( parseInt( pathArray[2], 10 ) )  && ( window.location.pathname.indexOf('/ask') === -1 ) ) {
-    	filter_so_add_jquery( filter_so_startup );
+var filter_so_check_page = function() {
+    var path = window.location.pathname;
+    var unanswered = ( path.indexOf('/unanswered') > -1 ); 
+    var questions = ( path.indexOf('/questions') > -1 );
+    if( questions ) {
+        var pathArray = window.location.pathname.split( '/' ); 
+        if( ( pathArray[2] && !isNaN( parseInt( pathArray[2], 10 ) ) ) || ( path.indexOf('/ask') > -1 ) )
+            questions = false;
     }
-} else {
-    filter_so_add_jquery( filter_so_startup );
+    if( path == '/' )
+        return 'homepage';
+    else if( questions )
+        return 'questions';
+    else if( unanswered )
+        return 'unanswered';
+    else
+        return false;
+};
+
+/**
+ * Start up
+ */
+if( ( page = filter_so_check_page() ) !== false ) {
+	filter_so_add_jquery( filter_so_startup, page );
 }
